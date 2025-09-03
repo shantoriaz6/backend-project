@@ -2,7 +2,7 @@ class ApiError extends Error{
     constructor(
         statusCode,
         message = "something went wrong",
-        error = [],
+        errors = [],
         stack = ""
     ){  
         //override
@@ -11,7 +11,7 @@ class ApiError extends Error{
         this.data = null
         this.message = message
         this.success = false;
-        this.errors = errors
+        this.errors = errors;
 
         if (stack) {
             this.stack = stack
