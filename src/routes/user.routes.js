@@ -24,4 +24,3 @@ router.route("/register").post(
     router.route("/refresh-token").post(refreshAccessToken)
 
 export default router
-
