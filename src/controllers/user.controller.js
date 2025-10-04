@@ -264,9 +264,15 @@ const updateUserAvatar = asyncHandler(async (req,res) => {
     }
    const avatar = await uploadOnCloudinary(avatarLocalPath)
 
-   if(!avatar.url) {
+   if(!avatar.url || avatar.public_id) {
      throw new ApiError(400, "Error while uploading on avatar")
    }
+
+  const currentUser = await User.findById(req.user?._id)
+
+  if(currentUser?.avatarPublicId) {
+    Cloudinary.uploader.destroy(currentUser.avatarPublicId)
+  }
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -295,9 +301,15 @@ const updateUserCoverImage = asyncHandler(async (req,res) => {
     }
    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
-   if(!coverImage.url) {
+   if(!coverImage.url || coverImage.public_id) {
      throw new ApiError(400, "Error while uploading on cover Image")
    }
+
+    const currentUser = await User.findById(req.user?._id)
+
+  if(currentUser?.coverImagePublicId) {
+    Cloudinary.uploader.destroy(currentUser.coverImagePublicId)
+  }
 
   await User.findByIdAndUpdate(
     req.user?._id,
