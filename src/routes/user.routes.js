@@ -45,7 +45,7 @@ router.route("/register").post(
 
     router.route("/cover-Image").patch(verifyjwt, upload.single("coverImage"),updateUserCoverImage)
 
-    router.route("/c/userName ").get(verifyjwt,getUserChannelProfile)
+    router.route("/c/:userName").get(verifyjwt,getUserChannelProfile)
 
     router.route("/history").get(verifyjwt, getWatchHistory)
 

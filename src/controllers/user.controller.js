@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/coudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import mongoose from "mongoose";
 
 import jwt from "jsonwebtoken";
 const registerUser = asyncHandler(async (req, res) => {
@@ -142,8 +143,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{
-                refreshToken:undefined
+            $unset:{
+                refreshToken: 1 //this removes the field from document
             }
         },
         {
@@ -224,9 +225,18 @@ const changeCurentPassword = asyncHandler(async ( req, res) =>{
 })
 
 const getCurrentUser = asyncHandler(async(req,res) => {
-    return res
-    .status (200)
-    .json(200, req.user, "current user fetched successfully")
+    //return res
+    //.status (200)
+    //.json(200, req.user, "current user fetched successfully")
+
+return res.status(200).json({
+  statusCode: 200,
+  data: req.user,
+  message: "current user fetched successfully"
+});
+
+
+
 })
 
 const updateAccountDetails = asyncHandler(async (req,res) => {
@@ -236,7 +246,7 @@ const updateAccountDetails = asyncHandler(async (req,res) => {
        throw new ApiError(400, "All fields are required") 
     }
 
-  const user = User .findByIdAndUpdate(
+  const user = await  User .findByIdAndUpdate(
     req.user?._id,
     {
         $set:{
@@ -264,7 +274,10 @@ const updateUserAvatar = asyncHandler(async (req,res) => {
     }
    const avatar = await uploadOnCloudinary(avatarLocalPath)
 
-   if(!avatar.url || avatar.public_id) {
+  // console.log("Cloudinary response:", avatar);
+
+
+   if(!avatar?.url || !avatar?.public_id) {
      throw new ApiError(400, "Error while uploading on avatar")
    }
 
@@ -301,7 +314,7 @@ const updateUserCoverImage = asyncHandler(async (req,res) => {
     }
    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
-   if(!coverImage.url || coverImage.public_id) {
+   if(!coverImage?.url || !coverImage?.public_id) {
      throw new ApiError(400, "Error while uploading on cover Image")
    }
 
@@ -338,6 +351,9 @@ const getUserChannelProfile = asyncHandler(async(req,res) =>{
    if(!userName?.trim()) {
     throw new ApiError(400, "userNamre is missing" )
    }
+
+   //console.log("Requested userName:", userName);
+
 
 const channel = await User.aggregate([
     {
@@ -398,6 +414,10 @@ const channel = await User.aggregate([
     }
 }
 ])
+
+//console.log("Aggregation result:", JSON.stringify(channel, null, 2));
+
+
 if(!channel?.length) {
     throw new ApiError("CHANNEL DOES NOT EXIST")
 }
@@ -439,7 +459,7 @@ const getWatchHistory = asyncHandler(async (req,res) => {
                         },
                         {
                             $addFields: {
-                                $first: "$owner"
+                               owner: { $arrayElemAt: ["$owner", 0] }
                             }
                         }
                     ]
