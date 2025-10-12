@@ -1,9 +1,9 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { Video } from "../models/video.models";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../models/video.models.js";
 import { ApiError } from "../utils/apiError.js";
 import { isValidObjectId } from "mongoose";
-import { ApiResponse } from "../utils/apiResponse";
-import { uploadOnCloudinary } from "../utils/coudinary";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/coudinary.js";
 
 
 const getAllVideos = asyncHandler(async (req, res ) => {
@@ -83,15 +83,101 @@ const publishAVideo = asyncHandler(async (req,res) => {
 
 
 const getVideoById = asyncHandler(async(req, res) => {
-    
+    const {videoId} = req.params;
+
+    if(!videoId) {
+        throw new ApiError(400, "videoId is required");
+    }
+
+    const video = await Video.findById(videoId).populate("owner", "userName avatar")
+
+    if(!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    res.status(200)
+    .json(new ApiResponse(200, video, "Video fetched successfully"))
+});
+
+
+const upatevideo = asyncHandler(async(req, res) => {
+    const {videoId} = req.params;
+    const {title, description, thumbnail} = req.body;
+    if(!videoId) {
+        throw new ApiError(400, "viedoId is required");
+    }
+
+    const video = await Video.findById(videoId);
+
+    if(!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    if(title) video.title = title;
+    if(title) video.description = description;
+    if(title) video.thumbnail = thumbnail;
+
+    await video.save();
+
+    res
+    .status(200)
+    .json (new ApiResponse (200, video, "video updated successfully"));
+
 })
 
+const deletevideo = asyncHandler(async(req, res) => {
+    const {videoId} = req.params;
+   
+    if(!videoId) {
+        throw new ApiError(400, "viedoId is required");
+    }
 
+    const video = await Video.findById(videoId);
+
+    if(!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+   if(video.publicId) {
+     await deleteFromCloudinary(video.publicId, "video")
+
+   }
+    res
+    .status(200)
+    .json (new ApiResponse (200, video, "video deleted successfully"));
+
+})
+
+const togglePublishStatus = asyncHandler(async(req, res) => {
+    const {videoId} = req.params;
+   
+    if(!videoId) {
+        throw new ApiError(400, "viedoId is required");
+    }
+
+    const video = await Video.findById(videoId);
+
+    if(!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    video.isPublished = !video.isPublished;
+    await video.save();
+
+    res
+    .status(200)
+    .json (new ApiResponse (200, video, `video ${video.isPublished? "published" : "unpublished"} successfully   `));
+
+})
 
 
 export {
     getAllVideos,
     publishAVideo,
+    getVideoById,
+    upatevideo,
+    deletevideo,
+    togglePublishStatus
 
 
 }
