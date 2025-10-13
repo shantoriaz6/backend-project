@@ -35,9 +35,7 @@ const videoSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref:"User"
         },
-        videoUrl: { type: String,
-                    required: true
-         },
+       
          publicId: { type: String },
 
     },

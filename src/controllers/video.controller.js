@@ -9,7 +9,7 @@ import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/coudinary.js"
 const getAllVideos = asyncHandler(async (req, res ) => {
     const {page= 1, limit = 10, query, sortBy = "createdAt", sortType = "asc", userId} = req.query;
 
-    if(userId && isValidObjectId(userId)){
+    if(userId && !isValidObjectId(userId)){
         throw new ApiError(400, "Invalid userId")
     }
 
@@ -49,25 +49,43 @@ const getAllVideos = asyncHandler(async (req, res ) => {
 
 const publishAVideo = asyncHandler(async (req,res) => {
     const {title, description} = req.body
-    const videoFile = req.file ;
+    const videoFile = req.files?.videoFile?.[0];
+  const thumbnail = req.files?.thumbnail?.[0];
 
-    if(!title || !description || !videoFile) {
+   // console.log("BODY:", req.body);
+//console.log("FILE:", req.file);
+
+
+    if(!title || !description || !videoFile ||!thumbnail) {
         throw new ApiError(400, "Title, description and video file are required");
     }
 
-    const cloudinaryResponse = await uploadOnCloudinary (videoFile.path, {
+    const videoUpload = await uploadOnCloudinary (videoFile.path, {
         resource_type: "video",
         folder: "videos"
     })
+
+   const thumbnailUpload = thumbnail
+  ? await uploadOnCloudinary(thumbnail.path, {
+      resource_type: "image",
+      folder: "thumbnails"
+    })
+  : null;
+
+const thumbnailUrl = thumbnailUpload?.secure_url || videoUpload?.thumbnail_url;
+
+if (!thumbnailUrl) {
+  throw new ApiError(400, "Thumbnail is required and could not be generated");
+}
 
     const video = await Video.create({
 
         title,
         description,
-        videoUrl: cloudinaryResponse.secure_url,
-        publicId: cloudinaryResponse.public_id,
-        duration: cloudinaryResponse.duration,
-        thumbnail: cloudinaryResponse.thumbnail_url,
+        videoFile: videoUpload.secure_url,
+        publicId: videoUpload.public_id,
+        duration: videoUpload.duration,
+        thumbnail: thumbnailUrl,
         owner: req.user._id,
         isPublished: true,
         
@@ -102,7 +120,7 @@ const getVideoById = asyncHandler(async(req, res) => {
 
 const upatevideo = asyncHandler(async(req, res) => {
     const {videoId} = req.params;
-    const {title, description, thumbnail} = req.body;
+    const {title, description, thumbnail} = req.body || {};
     if(!videoId) {
         throw new ApiError(400, "viedoId is required");
     }
@@ -114,8 +132,8 @@ const upatevideo = asyncHandler(async(req, res) => {
     }
 
     if(title) video.title = title;
-    if(title) video.description = description;
-    if(title) video.thumbnail = thumbnail;
+    if(description) video.description = description;
+    if(thumbnail) video.thumbnail = thumbnail;
 
     await video.save();
 
@@ -152,7 +170,7 @@ const togglePublishStatus = asyncHandler(async(req, res) => {
     const {videoId} = req.params;
    
     if(!videoId) {
-        throw new ApiError(400, "viedoId is required");
+        throw new ApiError(400, "videoId is required");
     }
 
     const video = await Video.findById(videoId);
