@@ -21,11 +21,16 @@ import videoRouter from './routes/video.routes.js'
 
 import playlistRouter from './routes/playlist.routes.js'
 
+import subscriptionRouter from './routes/subscription.routes.js'
+
+
 //routes decleration
 app.use("/api/v1/users", userRouter)
 
 app.use("/api/v1/videos", videoRouter)
 
 app.use("/api/v1/playlists", playlistRouter)
+
+app.use("/api/v1/subscriptions", subscriptionRouter)
 
 export { app }
